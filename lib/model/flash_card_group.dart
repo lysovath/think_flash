@@ -1,5 +1,6 @@
 
 import 'package:think_flash/model/flash_card.dart';
+import 'package:think_flash/model/evaluation_history.dart';
 
 class FlashCardGroup {
 
@@ -8,6 +9,9 @@ class FlashCardGroup {
   int id;
   String name;
   Set<FlashCard> flashcards;
+
+  List<EvaluationHistory> evaluationHistories = [];
+  int _evaluationHistoryId = 0;
 
   FlashCardGroup({required this.name, required this.flashcards}) : id = _id++;
 
