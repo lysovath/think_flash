@@ -4,10 +4,9 @@ class EvalHistory {
   static int _id = 0;
 
   final int id;
-  final DateTime evaluatedAt;
   final List<CardEvaluation> cardEvaluations;
 
-  EvalHistory({required this.cardEvaluations, required this.evaluatedAt})
+  EvalHistory({required this.cardEvaluations})
     : id = _id++;
 
   int get totalEvaluated => cardEvaluations.length;
