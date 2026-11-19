@@ -10,7 +10,7 @@ class FlashcardGroup {
 
   List<EvalHistory> evaluationHistories = [];
 
-  FlashcardGroup({required this.name}) : id = _id++;
+  FlashcardGroup({required this.name, this.flashcards = const []}) : id = _id++;
 
   int get totalFlashcard => flashcards.length;
 
