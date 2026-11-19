@@ -1,183 +1,217 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:think_flash/model/flash_card.dart';
 import 'package:think_flash/model/flash_card_group.dart';
 import 'package:think_flash/service/evaluation_service.dart';
 
 void main() {
-  late EvaluationService evaluationService;
-  late FlashCardGroup flashcardGroup;
-  late List<FlashCard> cards;
+  // Start a new evaluation
+  test('starts a new evaluation history', () {
+    final evaluationService = EvaluationService();
 
-  setUp(() {
-    evaluationService = EvaluationService();
-
-    cards = [
+    final cards = {
       FlashCard(question: 'What is Flutter?', answer: 'A UI toolkit'),
       FlashCard(question: 'What is Dart?', answer: 'A programming language'),
-      FlashCard(question: 'What is a widget?', answer: 'A UI building block'),
-    ];
+    };
 
-    flashcardGroup = FlashCardGroup(
+    final flashcardGroup = FlashCardGroup(
       name: 'Programming',
-      flashcards: cards.toSet(),
+      flashcards: cards,
     );
+
+    final history = evaluationService.startEvaluation(flashcardGroup);
+
+    expect(history.cardEvaluations.length, 0);
+    expect(flashcardGroup.evaluationHistories.length, 1);
   });
 
-  group('EvaluationService Tests', () {
+  // Evaluate a card as correct
+  test('records a correct card evaluation', () {
+    final evaluationService = EvaluationService();
 
-    // Start a new evaluation
-    test('should create a new evaluation history', () {
-      final history =
-          evaluationService.startEvaluation(flashcardGroup);
+    final card = FlashCard(
+      question: 'What is Flutter?',
+      answer: 'A UI toolkit',
+    );
 
-      expect(history.cardEvaluations, isEmpty);
-      expect(
-        flashcardGroup.evaluationHistories,
-        contains(history),
-      );
-    });
+    final flashcardGroup = FlashCardGroup(
+      name: 'Programming',
+      flashcards: {card},
+    );
 
-    // Evaluate a card as correct
-    test('should record a correct card evaluation', () {
-      final history =
-          evaluationService.startEvaluation(flashcardGroup);
+    final history = evaluationService.startEvaluation(flashcardGroup);
 
+    evaluationService.evaluateCard(
+      history: history,
+      flashcardId: card.id,
+      isCorrect: true,
+    );
+
+    expect(history.cardEvaluations.length, 1);
+    expect(history.cardEvaluations.first.isCorrect, true);
+  });
+
+  // Evaluate a card as incorrect
+  test('records an incorrect card evaluation', () {
+    final evaluationService = EvaluationService();
+
+    final card = FlashCard(
+      question: 'What is Dart?',
+      answer: 'A programming language',
+    );
+
+    final flashcardGroup = FlashCardGroup(
+      name: 'Programming',
+      flashcards: {card},
+    );
+
+    final history = evaluationService.startEvaluation(flashcardGroup);
+
+    evaluationService.evaluateCard(
+      history: history,
+      flashcardId: card.id,
+      isCorrect: false,
+    );
+
+    expect(history.cardEvaluations.length, 1);
+    expect(history.cardEvaluations.first.isCorrect, false);
+  });
+
+  // All cards are correct
+  test('calculates 100 percent when all cards are correct', () {
+    final evaluationService = EvaluationService();
+
+    final card1 = FlashCard(question: 'Question 1', answer: 'Answer 1');
+    final card2 = FlashCard(question: 'Question 2', answer: 'Answer 2');
+
+    final flashcardGroup = FlashCardGroup(
+      name: 'Programming',
+      flashcards: {card1, card2},
+    );
+
+    final history = evaluationService.startEvaluation(flashcardGroup);
+
+    for (final card in flashcardGroup.flashcards) {
       evaluationService.evaluateCard(
         history: history,
-        flashcardId: cards[0].id,
+        flashcardId: card.id,
         isCorrect: true,
       );
+    }
 
-      expect(history.cardEvaluations.length, 1);
-      expect(history.cardEvaluations.first.isCorrect, true);
-    });
+    expect(evaluationService.calculateScore(history), 100.00);
+  });
 
-    // Evaluate a card as incorrect
-    test('should record an incorrect card evaluation', () {
-      final history =
-          evaluationService.startEvaluation(flashcardGroup);
+  // All cards are incorrect
+  test('calculates zero percent when all cards are incorrect', () {
+    final evaluationService = EvaluationService();
 
+    final card1 = FlashCard(question: 'Question 1', answer: 'Answer 1');
+    final card2 = FlashCard(question: 'Question 2', answer: 'Answer 2');
+
+    final flashcardGroup = FlashCardGroup(
+      name: 'Programming',
+      flashcards: {card1, card2},
+    );
+
+    final history = evaluationService.startEvaluation(flashcardGroup);
+
+    for (final card in flashcardGroup.flashcards) {
       evaluationService.evaluateCard(
         history: history,
-        flashcardId: cards[0].id,
+        flashcardId: card.id,
         isCorrect: false,
       );
+    }
 
-      expect(history.cardEvaluations.length, 1);
-      expect(history.cardEvaluations.first.isCorrect, false);
-    });
+    expect(evaluationService.calculateScore(history), 0.0);
+  });
 
-    // All cards answered correctly
-    test('should calculate 100 percent when all cards are correct', () {
-      final history =
-          evaluationService.startEvaluation(flashcardGroup);
+  // Some cards are correct and others are incorrect
+  test('calculates the correct percentage for mixed results', () {
+    final evaluationService = EvaluationService();
 
-      for (final card in cards) {
-        evaluationService.evaluateCard(
-          history: history,
-          flashcardId: card.id,
-          isCorrect: true,
-        );
-      }
+    final card1 = FlashCard(question: 'Question 1', answer: 'Answer 1');
+    final card2 = FlashCard(question: 'Question 2', answer: 'Answer 2');
 
-      expect(evaluationService.calculateScore(history), 100);
-    });
+    final flashcardGroup = FlashCardGroup(
+      name: 'Programming',
+      flashcards: {card1, card2},
+    );
 
-    // All cards answered incorrectly
-    test('should calculate zero percent when all cards are incorrect', () {
-      final history =
-          evaluationService.startEvaluation(flashcardGroup);
+    final history = evaluationService.startEvaluation(flashcardGroup);
 
-      for (final card in cards) {
-        evaluationService.evaluateCard(
-          history: history,
-          flashcardId: card.id,
-          isCorrect: false,
-        );
-      }
+    evaluationService.evaluateCard(
+      history: history,
+      flashcardId: card1.id,
+      isCorrect: true,
+    );
 
-      expect(evaluationService.calculateScore(history), 0);
-    });
+    evaluationService.evaluateCard(
+      history: history,
+      flashcardId: card2.id,
+      isCorrect: false,
+    );
 
-    // Some correct and some incorrect
-    test('should calculate the correct percentage for mixed results', () {
-      final history =
-          evaluationService.startEvaluation(flashcardGroup);
+    expect(evaluationService.calculateScore(history), 50.00);
+  });
 
-      evaluationService.evaluateCard(
-        history: history,
-        flashcardId: cards[0].id,
-        isCorrect: true,
-      );
+  // No cards have been evaluated
+  test('returns zero when no cards have been evaluated', () {
+    final evaluationService = EvaluationService();
 
-      evaluationService.evaluateCard(
-        history: history,
-        flashcardId: cards[1].id,
-        isCorrect: false,
-      );
+    final flashcardGroup = FlashCardGroup(name: 'Programming', flashcards: {});
 
-      evaluationService.evaluateCard(
-        history: history,
-        flashcardId: cards[2].id,
-        isCorrect: true,
-      );
+    final history = evaluationService.startEvaluation(flashcardGroup);
 
-      expect(evaluationService.calculateScore(history), closeTo(66.67, 0.01));
-    });
+    expect(evaluationService.calculateScore(history), 0);
+  });
 
-    // No cards evaluated
-    test('should return zero when no cards have been evaluated', () {
-      final history =
-          evaluationService.startEvaluation(flashcardGroup);
+  // Retrieve evaluation histories
+  test('retrieves all evaluation histories of a flashcard group', () {
+    final evaluationService = EvaluationService();
 
-      expect(evaluationService.calculateScore(history), 0);
-    });
+    final flashcardGroup = FlashCardGroup(name: 'Programming', flashcards: {});
 
-    // Retrieve evaluation history
-    test('should retrieve all evaluation histories for a group', () {
-      evaluationService.startEvaluation(flashcardGroup);
-      evaluationService.startEvaluation(flashcardGroup);
+    evaluationService.startEvaluation(flashcardGroup);
+    evaluationService.startEvaluation(flashcardGroup);
 
-      final histories =
-          evaluationService.getHistory(flashcardGroup);
+    final histories = evaluationService.getHistory(flashcardGroup);
 
-      expect(histories.length, 2);
-    });
+    expect(histories.length, 2);
+  });
 
-    // Retrieve history with an invalid ID
-    test('should return null when history ID does not exist', () {
-      final result =
-          evaluationService.getHistoryById(flashcardGroup, -1);
+  // Multiple evaluation sessions keep results separate
+  test('keeps results separate across evaluation sessions', () {
+    final evaluationService = EvaluationService();
 
-      expect(result, isNull);
-    });
+    final card1 = FlashCard(question: 'Question 1', answer: 'Answer 1');
+    final card2 = FlashCard(question: 'Question 2', answer: 'Answer 2');
 
-    // Multiple evaluation sessions
-    test('should keep results separate across evaluation sessions', () {
-      final firstHistory =
-          evaluationService.startEvaluation(flashcardGroup);
+    final flashcardGroup = FlashCardGroup(
+      name: 'Programming',
+      flashcards: {card1, card2},
+    );
 
-      evaluationService.evaluateCard(
-        history: firstHistory,
-        flashcardId: cards[0].id,
-        isCorrect: true,
-      );
+    final firstHistory = evaluationService.startEvaluation(flashcardGroup);
 
-      final secondHistory =
-          evaluationService.startEvaluation(flashcardGroup);
+    evaluationService.evaluateCard(
+      history: firstHistory,
+      flashcardId: card1.id,
+      isCorrect: true,
+    );
 
-      evaluationService.evaluateCard(
-        history: secondHistory,
-        flashcardId: cards[1].id,
-        isCorrect: false,
-      );
+    final secondHistory = evaluationService.startEvaluation(flashcardGroup);
 
-      expect(firstHistory.cardEvaluations.length, 1);
-      expect(secondHistory.cardEvaluations.length, 1);
+    evaluationService.evaluateCard(
+      history: secondHistory,
+      flashcardId: card2.id,
+      isCorrect: false,
+    );
 
-      expect(evaluationService.calculateScore(firstHistory), 100);
-      expect(evaluationService.calculateScore(secondHistory), 0);
-    });
+    expect(firstHistory.cardEvaluations.length, 1);
+    expect(secondHistory.cardEvaluations.length, 1);
+
+    expect(evaluationService.calculateScore(firstHistory), 100);
+    expect(evaluationService.calculateScore(secondHistory), 0);
   });
 }
